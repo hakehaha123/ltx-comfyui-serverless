@@ -37,13 +37,9 @@ RUN python3 -c "from huggingface_hub import hf_hub_download; \
 RUN python3 -c "from huggingface_hub import hf_hub_download; \
     hf_hub_download(repo_id='comfyanonymous/flux_text_encoders', filename='t5xxl_fp8_e4m3fn.safetensors', local_dir='/workspace/ComfyUI/models/clip')"
 
-# 7.3 LipDub / 音频驱动 LoRA (精准下载 Lightricks 官方 IC-LoRA)
-RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    try: \
-        hf_hub_download(repo_id='Lightricks/LTX-Video-IC-LoRA-LipDub', filename='ltx-video-2b-ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras', token=os.getenv('HF_TOKEN')); \
-    except Exception as e: \
-        print('尝试默认文件名失败，尝试备用文件名:', e); \
-        hf_hub_download(repo_id='Lightricks/LTX-Video-IC-LoRA-LipDub', filename='ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras', token=os.getenv('HF_TOKEN'))"
+# 7.3 LipDub / 音频驱动 LoRA (自动尝试两种可能的文件名)
+RUN python3 -c "import os; from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='Lightricks/LTX-Video-IC-LoRA-LipDub', filename='ltx-video-2b-ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras', token=os.getenv('HF_TOKEN'))" || \
+    python3 -c "import os; from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='Lightricks/LTX-Video-IC-LoRA-LipDub', filename='ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras', token=os.getenv('HF_TOKEN'))" || true
 
 # 8. 清理缓存以控制镜像体积
 RUN rm -rf /root/.cache/pip /tmp/*
