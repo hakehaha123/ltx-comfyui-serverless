@@ -33,9 +33,9 @@ ENV HF_TOKEN=${HF_TOKEN}
 RUN python3 -c "from huggingface_hub import hf_hub_download; \
     hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-video-2b-v0.9.1.safetensors', local_dir='/workspace/ComfyUI/models/checkpoints')"
 
-# 7.2 T5xxl 文本编码器
+# 7.2 T5xxl 文本编码器（修改为正确的 repo_id: comfyanonymous/flux_text_encoders）
 RUN python3 -c "from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='comfyanonymous/butterworth_filters', filename='t5xxl_fp8_e4m3fn.safetensors', local_dir='/workspace/ComfyUI/models/clip')"
+    hf_hub_download(repo_id='comfyanonymous/flux_text_encoders', filename='t5xxl_fp8_e4m3fn.safetensors', local_dir='/workspace/ComfyUI/models/clip')"
 
 # 7.3 LipDub / 音频驱动 LoRA
 RUN python3 -c "from huggingface_hub import hf_hub_download; \
