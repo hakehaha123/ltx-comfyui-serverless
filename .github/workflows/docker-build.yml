@@ -1,18 +1,19 @@
 name: Build and Push LTX Docker Image
 
 on:
+  workflow_dispatch: # 支持在 Actions 页面手动点击运行
   push:
-    branches: [ "main" ] # 当你提交代码到 main 分支时自动触发打包
+    branches: [ "main", "master" ] # 无论主分支叫 main 还是 master 提交时都会自动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出仓库代码
+      # 1. 第一步必须先拉取仓库代码（包括你的 Dockerfile）
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. 🌟【核心】清理无用软件，强制释放 30GB+ 磁盘空间（放置在最前面的步骤）
+      # 2. 清理磁盘，释放 30GB+ 空间
       - name: Maximize Build Disk Space
         uses: easimon/maximize-build-space@v10
         with:
@@ -24,22 +25,23 @@ jobs:
           remove-codeql: 'true'
           remove-docker-images: 'true'
 
-      # 3. 配置 Docker Buildx 环境
+      # 3. 配置 Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 4. 登录 Docker Hub
+      # 4. 登录 Docker Hub（使用刚才测试成功的 Secrets）
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 5. 打包镜像并推送到 Docker Hub
+      # 5. 打包并推送（明确指定了 file 路径，彻底解决找不到 Dockerfile 的问题）
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/ltx-audio-serverless:v1
           build-args: |
