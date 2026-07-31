@@ -1,5 +1,5 @@
 # 1. 基础镜像：使用 RunPod 官方成熟的 ComfyUI Worker (已内置 RunPod API Handler)
-FROM runpod/worker-comfy:5.0.0-cuda12.1.1
+FROM runpod/worker-comfy:v2.7.0-cuda12.1.0
 
 # 2. 安装系统依赖 (FFmpeg 是处理音频、音效合成的关键)
 RUN apt-get update && apt-get install -y ffmpeg git-lfs && rm -rf /var/lib/apt/lists/*
