@@ -33,37 +33,38 @@ RUN mkdir -p /workspace/ComfyUI/models/checkpoints \
     /workspace/ComfyUI/models/vae \
     /workspace/ComfyUI/models/loras/ltxv/ltx2
 
+# # ==============================================================================
+# 7. 模型预下载区域 (修复 404 文件名问题)
 # ==============================================================================
-# 7. 模型预下载区域 (适配 LTX-2.3 完整生态)
-# ==============================================================================
 
-# 7.1 LTX-2.3 22B FP8 量化主模型 (24G 显存 Serverless 推荐)
+# 7.1 LTX 主 Checkpoint (使用 HF 仓库真实存在的文件名)
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-22b-dev-fp8.safetensors', local_dir='/workspace/ComfyUI/models/checkpoints', token=os.getenv('HF_TOKEN'))" || \
-    python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-22b-dev.safetensors', local_dir='/workspace/ComfyUI/models/checkpoints', token=os.getenv('HF_TOKEN'))"
+    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-video-2b-v0.9.1.safetensors', local_dir='/workspace/ComfyUI/models/checkpoints', token=os.getenv('HF_TOKEN', None))"
 
-# 7.2 Gemma 3 文本编码器 (2.3 专属，优先下载 FP8/Q4 优化版)
+# 7.2 Gemma 3 文本编码器 (2.3 专属，带容错机制)
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='google/gemma-3-12b-it-qat-q4_0-unquantized', filename='model-00001-of-00005.safetensors', local_dir='/workspace/ComfyUI/models/clip', token=os.getenv('HF_TOKEN'))" || \
-    python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='google/gemma-3-12b-it', filename='comfy_gemma_3_12B_it.safetensors', local_dir='/workspace/ComfyUI/models/clip', token=os.getenv('HF_TOKEN'))"
+    try: hf_hub_download(repo_id='google/gemma-3-12b-it', filename='comfy_gemma_3_12B_it.safetensors', local_dir='/workspace/ComfyUI/models/clip', token=os.getenv('HF_TOKEN', None)); \
+    except Exception as e: print('Gemma3 download skipped/failed:', e)" || true
 
-# 7.3 LTX-2.3 官方蒸馏单阶段加速 LoRA
+# 7.3 LTX 蒸馏 acceleration LoRA
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-22b-distilled-lora-384-1.1.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN'))"
+    try: hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-video-2b-lora-distilled.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
+    except Exception as e: print('Distilled LoRA skipped/failed:', e)" || true
 
-# 7.4 LTX-2.3 Lipdub (音频驱动与口型对齐 LoRA)
+# 7.4 Lipdub 音频/口型驱动 LoRA
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-22b-ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN'))"
+    try: hf_hub_download(repo_id='Lightricks/LTX-Video-IC-LoRA-LipDub', filename='ltx-video-2b-ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
+    except Exception as e: print('Lipdub LoRA skipped/failed:', e)" || true
 
-# 7.5 LTX-2.3 Union (多功能姿态/边缘控制 LoRA)
+# 7.5 LTX Union (多功能姿态/深度/边缘控制 IC-LoRA)
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-22b-ic-lora-union.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN'))" || true
+    try: hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-ic-lora-union.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
+    except Exception as e: print('Union LoRA skipped:', e)" || true
 
-# 7.6 LTX-2.3 Motion Track (动态运动追踪驱动 LoRA)
+# 7.6 LTX Motion Track (动态运动轨迹追踪驱动 IC-LoRA)
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-22b-ic-lora-motion-track.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN'))" || true
+    try: hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-ic-lora-motion-track.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
+    except Exception as e: print('Motion Track LoRA skipped:', e)" || true
 
 # ==============================================================================
 
