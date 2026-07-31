@@ -1,9 +1,12 @@
 # 1. 基础镜像：官方 PyTorch GPU 镜像（解决权限与基础环境）
 FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
 
+# 设置全局环境变量，防止 apt-get 弹出交互菜单卡死
+ENV DEBIAN_FRONTEND=noninteractive
+
 # 2. 安装系统依赖（加上 DEBIAN_FRONTEND=noninteractive 避免时区选择卡死）
-RUN ENV DEBIAN_FRONTEND=noninteractive apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg git git-lfs tzdata && \
+RUN apt-get update && \
+    apt-get install -y ffmpeg git git-lfs tzdata && \
     rm -rf /var/lib/apt/lists/*
 
 # 3. 安装 RunPod SDK、工具库（注意：不重新安装 torch，直接复用镜像内置的 GPU 版 Torch）
