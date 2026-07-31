@@ -1,38 +1,44 @@
-# 1. 基础镜像：使用 RunPod 官方成熟的 ComfyUI Worker (已内置 RunPod API Handler)
-FROM runpod/worker-comfy:v2.7.0-cuda12.1.0
+# 1. 基础镜像：官方 PyTorch GPU 镜像（解决权限与基础环境）
+FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
 
-# 2. 安装系统依赖 (FFmpeg 是处理音频、音效合成的关键)
-RUN apt-get update && apt-get install -y ffmpeg git-lfs && rm -rf /var/lib/apt/lists/*
+# 2. 安装系统依赖（FFmpeg 处理音视频）
+RUN apt-get update && apt-get install -y ffmpeg git git-lfs && rm -rf /var/lib/apt/lists/*
 
-# 3. 安装 Lightricks 官方 LTX-Video 自定义节点与音频/口型扩展
+# 3. 安装 RunPod SDK、工具库（注意：不重新安装 torch，直接复用镜像内置的 GPU 版 Torch）
+RUN pip install --no-cache-dir runpod requests huggingface_hub hf_transfer
+
+# 4. 下载 ComfyUI 主程序（从官方镜像切过来后，必须手动拉取 ComfyUI 代码）
+WORKDIR /workspace
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git \
+    && cd ComfyUI \
+    && pip install --no-cache-dir -r requirements.txt
+
+# 5. 安装 Lightricks 官方 LTX-Video 自定义节点与依赖
 WORKDIR /workspace/ComfyUI/custom_nodes
 RUN git clone https://github.com/Lightricks/ComfyUI-LTXVideo.git \
     && pip install --no-cache-dir -r ComfyUI-LTXVideo/requirements.txt
 
-# 4. 安装加速下载工具
-RUN pip install --no-cache-dir huggingface_hub hf_transfer
-
-# 设置环境变量，提升 HF 下载速度
+# 6. 设置环境变量，开启 Hugging Face 极速下载
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
-
-# 5. 精简下载模型 (只下载必须文件，体积控制在 ~25GB)
 ARG HF_TOKEN
 ENV HF_TOKEN=${HF_TOKEN}
 
-# 5.1 下载 FP8/精简版的 LTX 主模型 (示例使用精简打包路径)
+# 7. 模型预下载（下载核心 Checkpoint、T5 编码器、LipDub LoRA）
+# 7.1 LTX 主模型
 RUN python3 -c "from huggingface_hub import hf_hub_download; \
     hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-video-2b-v0.9.1.safetensors', local_dir='/workspace/ComfyUI/models/checkpoints')"
 
-# 5.2 下载文本编码器 (T5xxl FP8 精简版)
+# 7.2 T5xxl 文本编码器
 RUN python3 -c "from huggingface_hub import hf_hub_download; \
     hf_hub_download(repo_id='comfyanonymous/butterworth_filters', filename='t5xxl_fp8_e4m3fn.safetensors', local_dir='/workspace/ComfyUI/models/clip')"
 
-# 5.3 下载 LipDub / 口型与音效 LoRA (核心音频驱动模块)
+# 7.3 LipDub / 音频驱动 LoRA
 RUN python3 -c "from huggingface_hub import hf_hub_download; \
     hf_hub_download(repo_id='Lightricks/LTX-Video-IC-LoRA-LipDub', filename='ltx-video-2b-ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras')"
 
-# 6. 清理缓存以缩小镜像体积
+# 8. 清理缓存以控制镜像体积
 RUN rm -rf /root/.cache/pip /tmp/*
 
+# 9. 启动入口（确认你的 handler.py 放在仓库根目录下）
 WORKDIR /workspace
 CMD ["python3", "-u", "handler.py"]
