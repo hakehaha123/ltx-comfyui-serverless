@@ -9,23 +9,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 必须先清理磁盘！否则清理动作会抹掉刚 Checkout 下来的代码
-      - name: Maximize Build Disk Space
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 2048
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-
-      # 2. 磁盘清理完毕后，再拉取仓库代码（确保 Dockerfile 安全留在本地）
+      # 1. 先拉取代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 3. 设置 Buildx
+      # 2. 原生高效清理磁盘空间（释放约 40GB 空间，彻底避开 /var/lib/docker 报错）
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo docker image prune --all --force
+
+      # 3. 配置 Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
