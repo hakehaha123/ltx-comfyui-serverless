@@ -18,8 +18,18 @@ RUN git clone https://github.com/comfyanonymous/ComfyUI.git \
     && cd ComfyUI \
     && pip install --no-cache-dir -r requirements.txt
 
-# 5. 安装 Lightricks 官方 LTX-Video 最新自定义节点与依赖
+# ==============================================================================
+# 5. 安装 LTX-2.3 必须的自定义节点 (Custom Nodes)
+# ==============================================================================
 WORKDIR /workspace/ComfyUI/custom_nodes
+
+# 5.1 提前升级 LTX-2.3 核心依赖库（防止与 ComfyUI 自带旧库冲突导致 IMPORT FAILED）
+RUN pip install --no-cache-dir --upgrade transformers diffusers accelerate sentencepiece peft kornia kornia-rs
+
+# 5.1 安装 ComfyUI-Manager (节点管理器，方便管理与辅助解析)
+RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git
+
+# 5.2 安装 Lightricks 官方最新 2.3 自定义节点 (包含 MultimodalGuider, ClownSampler 等 8 个节点)
 RUN git clone https://github.com/Lightricks/ComfyUI-LTXVideo.git \
     && pip install --no-cache-dir -r ComfyUI-LTXVideo/requirements.txt
 
@@ -33,38 +43,25 @@ RUN mkdir -p /workspace/ComfyUI/models/checkpoints \
     /workspace/ComfyUI/models/vae \
     /workspace/ComfyUI/models/loras/ltxv/ltx2
 
-# # ==============================================================================
+# ==============================================================================
 # 7. 模型预下载区域 (修复 404 文件名问题)
 # ==============================================================================
 
-# 7.1 LTX 主 Checkpoint (使用 HF 仓库真实存在的文件名)
+# 7.1 LTX-2.3 22B FP8 量化版主 Checkpoint (~22GB)
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-video-2b-v0.9.1.safetensors', local_dir='/workspace/ComfyUI/models/checkpoints', token=os.getenv('HF_TOKEN', None))"
+    hf_hub_download(repo_id='Lightricks/LTX-2.3-fp8', filename='ltx-2.3-22b-dev-fp8.safetensors', local_dir='/workspace/ComfyUI/models/checkpoints', token=os.getenv('HF_TOKEN'))"
 
-# 7.2 Gemma 3 文本编码器 (2.3 专属，带容错机制)
+# 7.2 Gemma 3 12B 文本编码器
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    try: hf_hub_download(repo_id='google/gemma-3-12b-it', filename='comfy_gemma_3_12B_it.safetensors', local_dir='/workspace/ComfyUI/models/clip', token=os.getenv('HF_TOKEN', None)); \
-    except Exception as e: print('Gemma3 download skipped/failed:', e)" || true
+    hf_hub_download(repo_id='Comfy-Org/ltx-2', filename='split_files/text_encoders/gemma_3_12B_it.safetensors', local_dir='/workspace/ComfyUI/models/clip', token=os.getenv('HF_TOKEN'))"
 
-# 7.3 LTX 蒸馏 acceleration LoRA
+# 7.3 LTX-2.3 蒸馏单阶段加速 LoRA (v1.1)
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    try: hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-video-2b-lora-distilled.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
-    except Exception as e: print('Distilled LoRA skipped/failed:', e)" || true
+    hf_hub_download(repo_id='Lightricks/LTX-2.3', filename='ltx-2.3-22b-distilled-lora-384-1.1.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN'))"
 
-# 7.4 Lipdub 音频/口型驱动 LoRA
+# 7.4 LTX-2.3 Lipdub 音频口型驱动 LoRA (DubIt 专用)
 RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    try: hf_hub_download(repo_id='Lightricks/LTX-Video-IC-LoRA-LipDub', filename='ltx-video-2b-ic-lora-lipdub.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
-    except Exception as e: print('Lipdub LoRA skipped/failed:', e)" || true
-
-# 7.5 LTX Union (多功能姿态/深度/边缘控制 IC-LoRA)
-RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    try: hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-ic-lora-union.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
-    except Exception as e: print('Union LoRA skipped:', e)" || true
-
-# 7.6 LTX Motion Track (动态运动轨迹追踪驱动 IC-LoRA)
-RUN python3 -c "import os; from huggingface_hub import hf_hub_download; \
-    try: hf_hub_download(repo_id='Lightricks/LTX-Video', filename='ltx-2.3-ic-lora-motion-track.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN', None)); \
-    except Exception as e: print('Motion Track LoRA skipped:', e)" || true
+    hf_hub_download(repo_id='Lightricks/LTX-2.3-22b-IC-LoRA-LipDub', filename='ltx-2.3-22b-ic-lora-lipdub-0.9.safetensors', local_dir='/workspace/ComfyUI/models/loras/ltxv/ltx2', token=os.getenv('HF_TOKEN'))"
 
 # ==============================================================================
 
