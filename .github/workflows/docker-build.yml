@@ -2,6 +2,11 @@ name: Build and Push LTX Docker Image
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Docker image tag"
+        required: true
+        default: "v3"
   push:
     branches: [ "main", "master" ]
 
@@ -29,6 +34,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Resolve image tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v3" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -36,4 +50,4 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/ltx-video-serverless:v2
+          tags: ${{ secrets.DOCKER_USERNAME }}/ltx-video-serverless:${{ steps.meta.outputs.tag }}
