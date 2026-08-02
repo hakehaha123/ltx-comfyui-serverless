@@ -18,7 +18,18 @@ RUN comfy-node-install \
 
 COPY download_ltx_models.py /download_ltx_models.py
 COPY start_with_models.sh /start_with_models.sh
-RUN chmod +x /start_with_models.sh /download_ltx_models.py
+RUN chmod +x /start_with_models.sh /download_ltx_models.py \
+    && mkdir -p \
+      /comfyui/models/checkpoints \
+      /comfyui/models/text_encoders \
+      /comfyui/models/loras/ltxv/ltx2 \
+      /comfyui/models/clip \
+      /comfyui/models/vae \
+      /comfyui/models/diffusion_models \
+      /tmp/ltx-download \
+    && test -d /comfyui/models/checkpoints \
+    && test -d /comfyui/models/text_encoders \
+    && test -d /comfyui/models/loras/ltxv/ltx2
 
 # Download missing weights before starting ComfyUI + handler
 CMD ["/start_with_models.sh"]

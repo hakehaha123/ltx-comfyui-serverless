@@ -36,4 +36,4 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/ltx-audio-serverless:v1
+          tags: ${{ secrets.DOCKER_USERNAME }}/ltx-video-serverless:v2
