@@ -35,13 +35,15 @@ RUN chmod +x /start_with_models.sh /download_ltx_models.py \
       /comfyui/models/checkpoints \
       /comfyui/models/text_encoders \
       /comfyui/models/loras/ltxv/ltx2 \
+      /comfyui/models/latent_upscale_models \
       /comfyui/models/clip \
       /comfyui/models/vae \
       /comfyui/models/diffusion_models \
       /comfyui/models/.ltx-download-tmp \
     && test -d /comfyui/models/checkpoints \
     && test -d /comfyui/models/text_encoders \
-    && test -d /comfyui/models/loras/ltxv/ltx2
+    && test -d /comfyui/models/loras/ltxv/ltx2 \
+    && test -d /comfyui/models/latent_upscale_models
 
 # Download missing weights before starting ComfyUI + handler
 CMD ["/start_with_models.sh"]
